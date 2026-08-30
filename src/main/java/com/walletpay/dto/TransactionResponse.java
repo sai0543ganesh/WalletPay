@@ -1,0 +1,1 @@
+package com.walletpay.dto; import java.time.Instant; public record TransactionResponse(String type,String direction,long amount,String status,String provider,String token,Instant time,String counterparty){}

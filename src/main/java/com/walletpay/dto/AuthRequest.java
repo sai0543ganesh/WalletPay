@@ -1,0 +1,1 @@
+package com.walletpay.dto; import jakarta.validation.constraints.*; public record AuthRequest(@NotBlank @Pattern(regexp="^[0-9+ -]{6,20}$") String phone,@NotBlank @Size(min=1,max=100) String password){}

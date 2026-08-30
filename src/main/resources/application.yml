@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: wallet-pay
+
+  datasource:
+    # Local default. In production, set SPRING_DATASOURCE_URL,
+    # SPRING_DATASOURCE_USERNAME and SPRING_DATASOURCE_PASSWORD.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/walletpay}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  jwt:
+    secret: ${APP_JWT_SECRET:change-this-to-a-long-random-secret-at-least-32-characters-long}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
+  bank-webhook-secret: ${APP_BANK_WEBHOOK_SECRET:dev-bank-secret}

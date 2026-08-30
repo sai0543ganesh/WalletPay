@@ -1,0 +1,4 @@
+import {createContext,useContext,useEffect,useState} from 'react';
+import {authApi} from '../api/client';
+const C=createContext();
+export function AuthProvider({children}){const [user,setUser]=useState(()=>JSON.parse(localStorage.getItem('wallet_user')||'null'));const [loading,setLoading]=useState(true);useEffect(()=>setLoading(false),[]);const save=(r)=>{const u={id:r.id,name:r.name||'Wallet User',number:r.number};localStorage.setItem('wallet_token',r.token);localStorage.setItem('wallet_user',JSON.stringify(u));setUser(u)};return <C.Provider value={{user,loading,login:async(p,w)=>{const r=await authApi.login(p,w);save(r)},register:async(p,w)=>{const r=await authApi.register(p,w);save(r)},logout:()=>{localStorage.clear();setUser(null)}}}>{children}</C.Provider>}; export const useAuth=()=>useContext(C);

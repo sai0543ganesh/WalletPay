@@ -1,0 +1,1 @@
+package com.walletpay.dto; public record BalanceResponse(long amount,long locked){ public long total(){return amount+locked;} }

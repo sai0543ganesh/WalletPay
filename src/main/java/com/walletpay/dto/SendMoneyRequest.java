@@ -1,0 +1,1 @@
+package com.walletpay.dto; import jakarta.validation.constraints.*; public record SendMoneyRequest(@NotBlank String to,@Positive long amount){}
