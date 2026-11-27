@@ -5,7 +5,7 @@ RUN mvn -B -ntp dependency:go-offline
 COPY backend/src ./src
 RUN mvn -B -ntp -DskipTests package
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 RUN apk add --no-cache curl \
     && addgroup -S -g 10001 walletpay \
     && adduser -S -u 10001 -G walletpay walletpay
