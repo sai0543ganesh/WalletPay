@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: walletpay-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://127.0.0.1:5432/walletpay}
+    username: ${DATABASE_USERNAME:walletpay}
+    password: ${DATABASE_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 10000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+  forward-headers-strategy: none
+  tomcat:
+    max-http-form-post-size: 32KB
+    max-swallow-size: 32KB
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+app:
+  jwt-secret: ${JWT_SECRET:}
+  jwt-ttl-minutes: ${JWT_TTL_MINUTES:15}
+  cookie-secure: ${COOKIE_SECURE:false}
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  sandbox-webhook-enabled: ${SANDBOX_WEBHOOK_ENABLED:false}
+  webhook-secret: ${WEBHOOK_SECRET:}
+  demo-funding-enabled: ${DEMO_FUNDING_ENABLED:false}
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN

@@ -1,0 +1,26 @@
+package com.walletpay.config;
+
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.cfg.CoercionAction;
+import tools.jackson.databind.cfg.CoercionInputShape;
+import tools.jackson.databind.type.LogicalType;
+
+@Configuration
+public class JsonConfig {
+    @Bean
+    JsonMapperBuilderCustomizer strictIntegerInputs() {
+        // Monetary minor units must be JSON integers. Never silently round or parse strings.
+        return builder ->
+                builder.withCoercionConfig(
+                        LogicalType.Integer,
+                        coercion ->
+                                coercion.setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+                                        .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                                        .setCoercion(
+                                                CoercionInputShape.EmptyString, CoercionAction.Fail)
+                                        .setCoercion(
+                                                CoercionInputShape.Boolean, CoercionAction.Fail));
+    }
+}

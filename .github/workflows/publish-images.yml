@@ -1,0 +1,43 @@
+name: Publish reviewed images to ECR
+
+# A manual image publication only. This does not provision or deploy AWS services.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type PUBLISH after reviewing costs and CI
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: verify
+    if: github.event.inputs.confirmation == 'PUBLISH' && github.ref == 'refs/heads/main'
+    environment: aws-publication
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PUBLISH_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push immutable commit tags
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REVISION: ${{ github.sha }}
+        run: |
+          docker build --pull -f infra/docker/backend.Dockerfile -t "$REGISTRY/walletpay-api:$REVISION" .
+          docker build --pull -f infra/docker/frontend.Dockerfile -t "$REGISTRY/walletpay-web:$REVISION" .
+          docker push "$REGISTRY/walletpay-api:$REVISION"
+          docker push "$REGISTRY/walletpay-web:$REVISION"

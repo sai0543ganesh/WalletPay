@@ -1,0 +1,32 @@
+# This override creates no AWS resources. Use only after explicit deployment approval.
+services:
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      COOKIE_SECURE: "true"
+      ALLOWED_ORIGINS: https://${DOMAIN:?Set your owned DNS name}
+
+  edge:
+    build:
+      context: ..
+      dockerfile: infra/docker/edge.Dockerfile
+    ports: ["80:8080", "443:8443", "443:8443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN:?Set your owned DNS name}
+      ACME_EMAIL: ${ACME_EMAIL:?Set certificate contact email}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [application]
+    depends_on: [frontend]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+
+volumes:
+  caddy_data:
+  caddy_config:

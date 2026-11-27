@@ -1,444 +1,88 @@
-# Wallet Pay
+# WalletPay — Digital Wallet
 
-A full-stack digital wallet demo built with **Spring Boot, React/Vite and PostgreSQL**.
+A full-stack wallet sandbox built with **Java 21, Spring Boot, PostgreSQL, React and Vite**. It demonstrates secure session handling, concurrent money movement, retry-safe APIs, auditable state changes, and a practical AWS deployment path.
 
-## Local development
+**Hosted demo:** [digitalwalletpay.duckdns.org](https://digitalwalletpay.duckdns.org/)
 
-### 1. Database
+This repository contains the application code used by the hosted WalletPay demo. **All balances are simulated INR funds. This project has no real banking or payment-provider integration.**
 
-```powershell
-docker compose up -d
-```
+## What the application does
 
-PostgreSQL is available locally at `localhost:5433`.
+- Register and sign in with hashed passwords and a short-lived, HttpOnly JWT session.
+- View a wallet dashboard, spending summary, activity chart and recent transactions.
+- Review and confirm wallet-to-wallet transfers with required idempotency keys and support for Indian phone-number formats.
+- Switch between light, dark and system themes, with the selected appearance remembered in the browser.
+- Open profile and sign-out actions from the bottom avatar; use the WalletPay logo to return home.
+- Search and filter paginated transaction history, export CSV, and open receipts.
+- Update a profile and change a password with session invalidation.
+- Claim **one free simulated ₹100 credit per account** when the optional demo-funding feature is enabled. Existing and new accounts claim it manually; registration does not automatically add funds.
+- Keep the separate signed-callback deposit mechanism for operator testing. Ordinary demo users cannot choose a credit amount or request repeat free top-ups.
+- Show the bank-account area as **Under development**. Its disabled placeholder fields do not collect or store real bank details.
+- Record sensitive business operations in an audit trail.
 
-### 2. Backend
-## System Architecture
+Amounts are integer **minor units**, so `12550` means **₹125.50**. The application is deliberately single-currency. It never uses floating-point values to store balances.
 
-Wallet Pay is designed as a full-stack application with three main layers:
+## Start here
+
+| Goal | Read |
+| --- | --- |
+| Run without Docker or AWS | [Local development](docs/LOCAL_DEVELOPMENT.md) |
+| Understand the design | [Architecture](docs/ARCHITECTURE.md) |
+| Integrate with the API | [API guide](docs/API.md) |
+| Review security and known limits | [Security model](docs/SECURITY.md) |
+| Run tests and inspect actual results | [Testing](docs/TESTING.md) and [verification record](docs/VERIFICATION.md) |
+| Deploy on AWS | [AWS deployment](docs/AWS_DEPLOYMENT.md) |
+| Update the deployed ZIP-based installation | [Deployment update](docs/DEPLOYMENT_UPDATE.md) |
+| Operate, back up and recover | [Operations](docs/OPERATIONS.md) |
+| Make a focused contribution | [Contributing](CONTRIBUTING.md) |
+
+## Repository layout
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│                        USER / BROWSER                        │
-└──────────────────────────────┬───────────────────────────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│                     REACT + VITE FRONTEND                    │
-│                                                              │
-│  • Authentication UI                                         │
-│  • Wallet Dashboard                                          │
-│  • Balance Display                                           │
-│  • Add Money                                                 │
-│  • P2P Transfers                                             │
-│  • Transaction History                                       │
-└──────────────────────────────┬───────────────────────────────┘
-                               │ HTTP / REST API
-                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    SPRING BOOT BACKEND                       │
-│                                                              │
-│  • Authentication                                            │
-│  • JWT Validation                                            │
-│  • Wallet Management                                         │
-│  • Balance Processing                                        │
-│  • P2P Transfer Processing                                   │
-│  • Transaction Management                                    │
-│  • Business Logic                                            │
-└──────────────────────────────┬───────────────────────────────┘
-                               │ JPA / Hibernate
-                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│                      POSTGRESQL DATABASE                     │
-│                                                              │
-│  • Users                                                     │
-│  • Wallet Balances                                           │
-│  • On-Ramp Transactions                                      │
-│  • P2P Transactions                                          │
-└──────────────────────────────────────────────────────────────┘
-
-The frontend is responsible for user interaction and presentation. It communicates with the backend using REST APIs. The Spring Boot backend handles authentication, validation, wallet operations, transaction processing, and database operations. PostgreSQL provides persistent storage for users, balances, and transaction records.
-
-Detailed Project Structure
-wallet-pay-complete-updated/
-│
-├── src/
-│   │
-│   ├── main/
-│   │   │
-│   │   ├── java/
-│   │   │   │
-│   │   │   └── com/
-│   │   │       └── walletpay/
-│   │   │           │
-│   │   │           ├── config/
-│   │   │           │   └── Application configuration
-│   │   │           │
-│   │   │           ├── controller/
-│   │   │           │   └── REST API endpoints
-│   │   │           │
-│   │   │           ├── service/
-│   │   │           │   └── Business logic
-│   │   │           │
-│   │   │           ├── repository/
-│   │   │           │   └── Database access layer
-│   │   │           │
-│   │   │           ├── entity/
-│   │   │           │   └── Database entities
-│   │   │           │
-│   │   │           ├── dto/
-│   │   │           │   └── Request and response objects
-│   │   │           │
-│   │   │           ├── security/
-│   │   │           │   └── JWT and security configuration
-│   │   │           │
-│   │   │           └── WalletPayApplication.java
-│   │   │
-│   │   └── resources/
-│   │       │
-│   │       └── application.yml
-│   │           └── Application configuration
-│   │
-│   └── test/
-│       └── Backend tests
-│
-├── frontend/
-│   │
-│   ├── src/
-│   │   │
-│   │   ├── components/
-│   │   │   └── Reusable UI components
-│   │   │
-│   │   ├── pages/
-│   │   │   └── Application screens
-│   │   │
-│   │   ├── services/
-│   │   │   └── Backend API communication
-│   │   │
-│   │   ├── context/
-│   │   │   └── Global application state
-│   │   │
-│   │   ├── App.jsx
-│   │   │   └── Main application component
-│   │   │
-│   │   └── main.jsx
-│   │       └── Application entry point
-│   │
-│   ├── public/
-│   │   └── Static frontend assets
-│   │
-│   ├── package.json
-│   │   └── Frontend dependencies and scripts
-│   │
-│   └── vite.config.js
-│       └── Vite configuration
-│
-├── docker-compose.yml
-│   └── PostgreSQL Docker configuration
-│
-├── Dockerfile
-│   └── Spring Boot container configuration
-│
-├── pom.xml
-│   └── Backend dependencies and Maven configuration
-│
-└── README.md
-    └── Project documentation
-Backend Architecture
-
-The Spring Boot backend follows a layered architecture:
-
-Client Request
-      │
-      ▼
-┌─────────────────┐
-│   Controller    │
-│   REST APIs     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│     Service     │
-│  Business Logic │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   Repository    │
-│ Database Access │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   PostgreSQL    │
-└─────────────────┘
-Controller Layer
-
-The controller layer exposes REST API endpoints to the frontend. It receives HTTP requests, validates input, and forwards requests to the appropriate service layer.
-
-Examples of functionality handled by the controller layer include:
-
-User registration
-User login
-Retrieving wallet balances
-Adding money
-Sending money to another user
-Retrieving transaction history
-Service Layer
-
-The service layer contains the application's core business logic.
-
-For example, during a peer-to-peer transfer, the service layer:
-
-Identifies the sender.
-Identifies the recipient.
-Validates the transfer amount.
-Checks whether the sender has sufficient funds.
-Updates the wallet balances.
-Creates transaction records.
-Ensures database operations are completed consistently.
-
-This separation keeps business logic independent from the API and database layers.
-
-Repository Layer
-
-The repository layer communicates with PostgreSQL using Spring Data JPA.
-
-It handles operations such as:
-
-Finding users
-Retrieving wallet information
-Saving transactions
-Updating balances
-Retrieving transaction history
-
-Spring Data JPA and Hibernate reduce the amount of manual SQL required in the application.
-
-Frontend Architecture
-
-The frontend is built using React and Vite.
-
-Browser
-   │
-   ▼
-main.jsx
-   │
-   ▼
-App.jsx
-   │
-   ├── Login / Authentication
-   │
-   ├── Dashboard
-   │      │
-   │      ├── Balance
-   │      ├── Quick Actions
-   │      └── Recent Transactions
-   │
-   ├── Add Money
-   │
-   ├── Send Money
-   │
-   └── Transaction History
-
-The frontend is responsible for:
-
-Displaying application pages
-Managing user interaction
-Sending API requests
-Displaying wallet information
-Showing transaction results
-Managing authenticated user state
-
-The frontend does not directly access the database. All data access occurs through the Spring Boot backend.
-
-Authentication Flow
-User enters credentials
-        │
-        ▼
-React Frontend
-        │
-        │ POST /login
-        ▼
-Spring Boot Backend
-        │
-        ▼
-Validate credentials
-        │
-        ├── Invalid → Return authentication error
-        │
-        └── Valid
-              │
-              ▼
-         Generate JWT
-              │
-              ▼
-         Return JWT token
-              │
-              ▼
-React stores authentication state
-              │
-              ▼
-Authenticated API requests
-
-Passwords are protected using BCrypt hashing, while JWT is used to identify authenticated users during API requests.
-
-Wallet and Transaction Flow
-Adding Money
-User enters amount
-        │
-        ▼
-Frontend
-        │
-        ▼
-Backend creates transaction
-        │
-        ▼
-Transaction is processed
-        │
-        ▼
-Wallet balance is updated
-        │
-        ▼
-Transaction stored in PostgreSQL
-        │
-        ▼
-Updated balance displayed
-Peer-to-Peer Transfer
-Sender
-   │
-   │ Send Money
-   ▼
-Spring Boot Backend
-   │
-   ├── Validate sender
-   │
-   ├── Validate recipient
-   │
-   ├── Validate amount
-   │
-   ├── Check balance
-   │
-   ▼
-Update sender wallet
-   │
-   ▼
-Update recipient wallet
-   │
-   ▼
-Create transaction records
-   │
-   ▼
-Save to PostgreSQL
-Database Design
-
-The database stores the application's persistent information.
-
-Users
-
-Stores information required to identify and authenticate users.
-
-User
-├── id
-├── phone
-├── password
-└── related wallet
-Wallets
-
-Stores user wallet information.
-
-Wallet
-├── id
-├── user_id
-├── amount
-└── locked
-Transactions
-
-Stores financial activity performed through the application.
-
-Transaction
-├── id
-├── sender
-├── recipient
-├── amount
-├── status
-└── timestamp
-
-This structure ensures that balances and transactions remain available after the application is restarted.
-
-Local Development Environment
-
-The project runs locally using three services:
-
-┌─────────────────────────────────────┐
-│ React Frontend                      │
-│ http://localhost:5173               │
-└─────────────────┬───────────────────┘
-                  │
-                  │ REST API
-                  ▼
-┌─────────────────────────────────────┐
-│ Spring Boot Backend                 │
-│ http://localhost:8080               │
-└─────────────────┬───────────────────┘
-                  │
-                  │ JPA / JDBC
-                  ▼
-┌─────────────────────────────────────┐
-│ PostgreSQL                          │
-│ localhost:5433                      │
-└─────────────────────────────────────┘
-
-This separation allows each part of the application to be independently developed, tested, and deployed.
-
-Deployment Architecture
-
-The application can be deployed with the same separation:
-
-                    Internet
-                       │
-                       ▼
-              Hosted React Frontend
-                       │
-                       │ HTTPS API Requests
-                       ▼
-             Hosted Spring Boot Backend
-                       │
-                       │ Secure Database Connection
-                       ▼
-                PostgreSQL Database
-
-This architecture allows the frontend, backend, and database to be deployed independently while remaining connected through configured URLs and environment variables.
-```powershell
-mvn spring-boot:run
+backend/                 Java application, migrations and backend tests
+frontend/                React interface, API client and component tests
+infra/
+  docker/                Multi-stage images and secret-file entrypoint
+  nginx/                 Same-origin SPA/API gateway and security headers
+  caddy/                 HTTPS edge configuration
+  scripts/               Local secret generation
+  compose.yaml           Local container stack, bound only to loopback
+  compose.ec2.yaml       Optional public HTTPS edge override
+docs/                    Design, API, security, testing and deployment guides
+tools/                   Native development helpers (no Docker required)
+tests/e2e/               Browser acceptance tests
+.github/workflows/       CI and manually approved image publication
 ```
 
-If a Windows/Java installation sends the obsolete `Asia/Calcutta` timezone to PostgreSQL, use this local workaround:
+The backend separates HTTP handling, business rules, persistence, security and configuration. The frontend separates application state, API calls, pages and shared UI. Deployment files live outside either application so the same source remains usable locally or in containers.
 
-```powershell
-$env:JAVA_TOOL_OPTIONS="-Duser.timezone=UTC"
-mvn spring-boot:run
+## Optional container quick start
+
+Docker is optional for development and is not assumed to be installed on your laptop. On a machine with Docker Engine and Compose v2:
+
+```sh
+node infra/scripts/setup-env.mjs
+docker compose --env-file .env -f infra/compose.yaml up --build -d
 ```
 
-The backend runs on `http://localhost:8080`.
+Open **http://localhost:8088**. This local stack uses HTTP with non-secure cookies; the EC2 override enables HTTPS and the strict production profile. The database and backend have no published host ports. Generated secrets remain in the ignored `.secrets/` directory. Existing configuration is preserved by the setup script.
 
-### 3. Frontend
+The deployment default is `DEMO_FUNDING_ENABLED=false`. Set it to `true` in the existing environment file and recreate the backend to show the one-time ₹100 claim. The native development helper enables this feature explicitly. Claim status is stored in PostgreSQL, so signing out, restarting containers or using a new idempotency key does not create another grant for the same account. This is simulated demo money, not a bank deposit.
 
-```powershell
-cd frontend
-npm.cmd install
-npm.cmd run dev
-```
+## Native development status
 
-Open `http://localhost:5173`.
+Run `python tools/local.py status` from the repository root to check the local database port, API health and frontend endpoint without starting services or changing data. See [local development](docs/LOCAL_DEVELOPMENT.md#check-local-services) for the checks and exit codes.
 
-Demo account:
+## Engineering choices
 
-- Phone: `0987654321`
-- Password: any non-empty password
+**Consistency first.** Transfers lock both wallets in a deterministic order and update balances and transaction records within one database transaction. Duplicate requests resolve through the same operation key rather than creating a second payment.
 
+**Browser sessions stay out of JavaScript storage.** A JWT is delivered in an HttpOnly cookie, backed by server-side revocable sessions. Unsafe browser requests also require a CSRF token. The UI does not store tokens in localStorage.
 
-The frontend is then rebuilt and served with that API URL.
+**Database behavior is tested on PostgreSQL.** Unit tests do not substitute H2 behavior for PostgreSQL locking and constraints. Integration tests and the CI database service use a disposable PostgreSQL database.
 
-### Important security note
+**AWS hosting with explicit deployment control.** The hosted demo uses EC2, Docker Compose and a Caddy HTTPS edge. CI checks source and builds containers. ECR publication requires an explicit manual action and configured AWS role. No workflow provisions AWS resources or deploys automatically. See the verification record for checks actually executed in the current environment.
 
-This is a demonstration wallet. Do not use real payment credentials or real money. Generate strong production secrets and never commit database credentials or JWT secrets to GitHub.
+## Scope
+
+This application is a financial sandbox, not a regulated payment system. Real payment acceptance would need a verified provider integration, reconciliation, fraud controls, compliance review and operational controls. The current balance-and-transaction model is not presented as a complete double-entry accounting ledger. See [security boundaries](docs/SECURITY.md#financial-boundaries).

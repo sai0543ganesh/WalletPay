@@ -1,29 +1,33 @@
-# IDE
-.idea/
-.vscode/
-*.iml
-
-# Java / Maven
-target/
-*.class
-
-# Frontend dependencies
-frontend/node_modules/
-frontend/dist/
-
-# Environment variables and secrets
+# Secrets and local configuration
 .env
 .env.*
 !.env.example
+.secrets/
+*.pem
+*.key
+*.p12
+*.jks
+credentials.json
+application-local.yml
 
-frontend/.env
-frontend/.env.*
-!frontend/.env.example
-
-# Logs
+# Build output and local tooling
+**/target/
+**/node_modules/
+**/dist/
+**/coverage/
+**/.vite/
+**/test-results/
+**/playwright-report/
 *.log
-logs/
-
-# OS files
+*.pid
+__pycache__/
+*.pyc
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+*.iml
+.local/
+backups/
+*.dump
+*.zip

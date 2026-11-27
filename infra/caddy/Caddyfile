@@ -1,0 +1,21 @@
+{
+    email {$ACME_EMAIL}
+    admin off
+    http_port 8080
+    https_port 8443
+    auto_https disable_redirects
+}
+
+http://{$DOMAIN} {
+    redir https://{$DOMAIN}{uri} permanent
+}
+
+https://{$DOMAIN} {
+    encode zstd gzip
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        -Server
+    }
+    # Caddy replaces untrusted forwarded headers before passing traffic onward.
+    reverse_proxy frontend:8080
+}

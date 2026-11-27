@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: ${TEST_DATABASE_URL}
+    username: ${TEST_DATABASE_USERNAME:walletpay_test}
+    password: ${TEST_DATABASE_PASSWORD:unused}
+app:
+  jwt-secret: integration-only-signing-key-never-use-in-production-012345
+  sandbox-webhook-enabled: true
+  webhook-secret: integration-only-webhook-key-never-use-in-production-012345
+  cookie-secure: false
+logging:
+  level:
+    root: WARN
