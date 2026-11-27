@@ -49,7 +49,7 @@ jobs:
         run: mvn -B -ntp -Pintegration verify
       - name: Preserve test evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-test-reports
           path: |
@@ -112,7 +112,7 @@ jobs:
           APP_URL=http://localhost:8088 npm --prefix tests/e2e test
       - name: Preserve browser evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-verification
           path: |
