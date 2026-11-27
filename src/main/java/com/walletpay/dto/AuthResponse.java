@@ -1,1 +1,3 @@
-package com.walletpay.dto; public record AuthResponse(Long id,String name,String number,String token){}
+package com.walletpay.dto;
+
+public record AuthResponse(Long id, String name, String number, String token) {}

@@ -1,2 +1,31 @@
-package com.walletpay.controller; import com.walletpay.dto.BankWebhookRequest; import com.walletpay.service.WalletService; import jakarta.validation.Valid; import org.springframework.beans.factory.annotation.Value; import org.springframework.http.*; import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/api/webhooks") public class WebhookController {private final WalletService service; private final String secret; public WebhookController(WalletService s,@Value("${app.bank-webhook-secret}") String secret){service=s;this.secret=secret;} @PostMapping("/hdfc") public ResponseEntity<?> capture(@RequestHeader(value="X-Webhook-Secret",required=false) String supplied,@Valid @RequestBody BankWebhookRequest r){if(!secret.equals(supplied))return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(java.util.Map.of("message","Invalid webhook secret"));service.captureWebhook(r);return ResponseEntity.ok(java.util.Map.of("message","Captured"));}}
+package com.walletpay.controller;
+
+import com.walletpay.dto.BankWebhookRequest;
+import com.walletpay.service.WalletService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/webhooks")
+public class WebhookController {
+    private final WalletService service;
+    private final String secret;
+
+    public WebhookController(WalletService s, @Value("${app.bank-webhook-secret}") String secret) {
+        service = s;
+        this.secret = secret;
+    }
+
+    @PostMapping("/hdfc")
+    public ResponseEntity<?> capture(
+            @RequestHeader(value = "X-Webhook-Secret", required = false) String supplied,
+            @Valid @RequestBody BankWebhookRequest r) {
+        if (!secret.equals(supplied))
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of("message", "Invalid webhook secret"));
+        service.captureWebhook(r);
+        return ResponseEntity.ok(java.util.Map.of("message", "Captured"));
+    }
+}

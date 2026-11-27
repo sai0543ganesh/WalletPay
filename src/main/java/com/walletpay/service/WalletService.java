@@ -1,9 +1,149 @@
 package com.walletpay.service;
-import com.walletpay.dto.*; import com.walletpay.entity.*; import com.walletpay.repository.*; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional; import java.time.Instant; import java.util.*; import java.util.stream.*;
-@Service public class WalletService { private final UserRepository users; private final BalanceRepository balances; private final OnRampTransactionRepository onramps; private final P2PTransferRepository transfers; public WalletService(UserRepository u,BalanceRepository b,OnRampTransactionRepository o,P2PTransferRepository t){users=u;balances=b;onramps=o;transfers=t;}
- public BalanceResponse balance(Long userId){Balance b=balances.findByUserId(userId).orElseThrow(()->new NoSuchElementException("Balance not found"));return new BalanceResponse(b.getAmount(),b.getLocked());}
- @Transactional public String createOnRamp(Long userId,AddMoneyRequest req){User u=users.findById(userId).orElseThrow(()->new NoSuchElementException("User not found"));OnRampTransaction t=new OnRampTransaction();t.setUser(u);t.setProvider(req.provider());t.setAmount(req.amount());t.setStatus(OnRampStatus.PROCESSING);t.setStartTime(Instant.now());t.setToken(UUID.randomUUID().toString());onramps.save(t);return t.getToken();}
- @Transactional public void addMoney(Long userId,AddMoneyRequest req){User u=users.findById(userId).orElseThrow(()->new NoSuchElementException("User not found"));OnRampTransaction t=new OnRampTransaction();t.setUser(u);t.setProvider(req.provider());t.setAmount(req.amount());t.setStatus(OnRampStatus.SUCCESS);t.setStartTime(Instant.now());t.setToken(UUID.randomUUID().toString());onramps.save(t);Balance b=balances.findByUserIdForUpdate(userId).orElseThrow();b.setAmount(b.getAmount()+req.amount());}
- @Transactional public void transfer(Long fromId,SendMoneyRequest req){User from=users.findById(fromId).orElseThrow(()->new NoSuchElementException("Sender not found"));User to=users.findByNumber(req.to()).orElseThrow(()->new NoSuchElementException("User not found"));if(from.getId().equals(to.getId()))throw new IllegalArgumentException("Cannot transfer to yourself"); long first=Math.min(from.getId(),to.getId()),second=Math.max(from.getId(),to.getId());Balance b1=balances.findByUserIdForUpdate(first).orElseThrow();Balance b2=balances.findByUserIdForUpdate(second).orElseThrow();Balance sender=from.getId().equals(first)?b1:b2;Balance receiver=from.getId().equals(first)?b2:b1;if(sender.getAmount()<req.amount())throw new IllegalArgumentException("Insufficient funds");sender.setAmount(sender.getAmount()-req.amount());receiver.setAmount(receiver.getAmount()+req.amount());P2PTransfer tx=new P2PTransfer();tx.setFromUser(from);tx.setToUser(to);tx.setAmount(req.amount());tx.setTimestamp(Instant.now());transfers.save(tx);}
- @Transactional public void captureWebhook(BankWebhookRequest req){OnRampTransaction tx=onramps.findByToken(req.token()).orElseThrow(()->new NoSuchElementException("Unknown token"));if(tx.getStatus()==OnRampStatus.SUCCESS)return;Long userId=Long.valueOf(req.userIdentifier());if(!tx.getUser().getId().equals(userId))throw new IllegalArgumentException("Token does not belong to user");if(tx.getAmount()!=req.amount())throw new IllegalArgumentException("Amount mismatch");Balance b=balances.findByUserIdForUpdate(userId).orElseThrow();b.setAmount(b.getAmount()+req.amount());tx.setStatus(OnRampStatus.SUCCESS);}
- public List<TransactionResponse> transactions(Long userId){List<TransactionResponse> out=new ArrayList<>();onramps.findByUserIdOrderByStartTimeDesc(userId).forEach(t->out.add(new TransactionResponse("ON_RAMP","CREDIT",t.getAmount(),t.getStatus().name(),t.getProvider(),t.getToken(),t.getStartTime(),null)));transfers.findByFromUserIdOrToUserIdOrderByTimestampDesc(userId,userId).forEach(t->{boolean sent=t.getFromUser().getId().equals(userId);User other=sent?t.getToUser():t.getFromUser();out.add(new TransactionResponse("P2P",sent?"DEBIT":"CREDIT",t.getAmount(),"SUCCESS",null,null,t.getTimestamp(),other.getNumber()));});return out.stream().sorted(Comparator.comparing(TransactionResponse::time).reversed()).toList();} }
+
+import com.walletpay.dto.*;
+import com.walletpay.entity.*;
+import com.walletpay.repository.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.*;
+
+@Service
+public class WalletService {
+    private final UserRepository users;
+    private final BalanceRepository balances;
+    private final OnRampTransactionRepository onramps;
+    private final P2PTransferRepository transfers;
+
+    public WalletService(
+            UserRepository u,
+            BalanceRepository b,
+            OnRampTransactionRepository o,
+            P2PTransferRepository t) {
+        users = u;
+        balances = b;
+        onramps = o;
+        transfers = t;
+    }
+
+    public BalanceResponse balance(Long userId) {
+        Balance b =
+                balances.findByUserId(userId)
+                        .orElseThrow(() -> new NoSuchElementException("Balance not found"));
+        return new BalanceResponse(b.getAmount(), b.getLocked());
+    }
+
+    @Transactional
+    public String createOnRamp(Long userId, AddMoneyRequest req) {
+        User u =
+                users.findById(userId)
+                        .orElseThrow(() -> new NoSuchElementException("User not found"));
+        OnRampTransaction t = new OnRampTransaction();
+        t.setUser(u);
+        t.setProvider(req.provider());
+        t.setAmount(req.amount());
+        t.setStatus(OnRampStatus.PROCESSING);
+        t.setStartTime(Instant.now());
+        t.setToken(UUID.randomUUID().toString());
+        onramps.save(t);
+        return t.getToken();
+    }
+
+    @Transactional
+    public void addMoney(Long userId, AddMoneyRequest req) {
+        User u =
+                users.findById(userId)
+                        .orElseThrow(() -> new NoSuchElementException("User not found"));
+        OnRampTransaction t = new OnRampTransaction();
+        t.setUser(u);
+        t.setProvider(req.provider());
+        t.setAmount(req.amount());
+        t.setStatus(OnRampStatus.SUCCESS);
+        t.setStartTime(Instant.now());
+        t.setToken(UUID.randomUUID().toString());
+        onramps.save(t);
+        Balance b = balances.findByUserIdForUpdate(userId).orElseThrow();
+        b.setAmount(b.getAmount() + req.amount());
+    }
+
+    @Transactional
+    public void transfer(Long fromId, SendMoneyRequest req) {
+        User from =
+                users.findById(fromId)
+                        .orElseThrow(() -> new NoSuchElementException("Sender not found"));
+        User to =
+                users.findByNumber(req.to())
+                        .orElseThrow(() -> new NoSuchElementException("User not found"));
+        if (from.getId().equals(to.getId()))
+            throw new IllegalArgumentException("Cannot transfer to yourself");
+        long first = Math.min(from.getId(), to.getId()),
+                second = Math.max(from.getId(), to.getId());
+        Balance b1 = balances.findByUserIdForUpdate(first).orElseThrow();
+        Balance b2 = balances.findByUserIdForUpdate(second).orElseThrow();
+        Balance sender = from.getId().equals(first) ? b1 : b2;
+        Balance receiver = from.getId().equals(first) ? b2 : b1;
+        if (sender.getAmount() < req.amount())
+            throw new IllegalArgumentException("Insufficient funds");
+        sender.setAmount(sender.getAmount() - req.amount());
+        receiver.setAmount(receiver.getAmount() + req.amount());
+        P2PTransfer tx = new P2PTransfer();
+        tx.setFromUser(from);
+        tx.setToUser(to);
+        tx.setAmount(req.amount());
+        tx.setTimestamp(Instant.now());
+        transfers.save(tx);
+    }
+
+    @Transactional
+    public void captureWebhook(BankWebhookRequest req) {
+        OnRampTransaction tx =
+                onramps.findByToken(req.token())
+                        .orElseThrow(() -> new NoSuchElementException("Unknown token"));
+        if (tx.getStatus() == OnRampStatus.SUCCESS) return;
+        Long userId = Long.valueOf(req.userIdentifier());
+        if (!tx.getUser().getId().equals(userId))
+            throw new IllegalArgumentException("Token does not belong to user");
+        if (tx.getAmount() != req.amount()) throw new IllegalArgumentException("Amount mismatch");
+        Balance b = balances.findByUserIdForUpdate(userId).orElseThrow();
+        b.setAmount(b.getAmount() + req.amount());
+        tx.setStatus(OnRampStatus.SUCCESS);
+    }
+
+    public List<TransactionResponse> transactions(Long userId) {
+        List<TransactionResponse> out = new ArrayList<>();
+        onramps.findByUserIdOrderByStartTimeDesc(userId)
+                .forEach(
+                        t ->
+                                out.add(
+                                        new TransactionResponse(
+                                                "ON_RAMP",
+                                                "CREDIT",
+                                                t.getAmount(),
+                                                t.getStatus().name(),
+                                                t.getProvider(),
+                                                t.getToken(),
+                                                t.getStartTime(),
+                                                null)));
+        transfers
+                .findByFromUserIdOrToUserIdOrderByTimestampDesc(userId, userId)
+                .forEach(
+                        t -> {
+                            boolean sent = t.getFromUser().getId().equals(userId);
+                            User other = sent ? t.getToUser() : t.getFromUser();
+                            out.add(
+                                    new TransactionResponse(
+                                            "P2P",
+                                            sent ? "DEBIT" : "CREDIT",
+                                            t.getAmount(),
+                                            "SUCCESS",
+                                            null,
+                                            null,
+                                            t.getTimestamp(),
+                                            other.getNumber()));
+                        });
+        return out.stream()
+                .sorted(Comparator.comparing(TransactionResponse::time).reversed())
+                .toList();
+    }
+}

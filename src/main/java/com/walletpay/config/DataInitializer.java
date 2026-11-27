@@ -12,22 +12,52 @@ import java.time.Instant;
 @Configuration
 public class DataInitializer {
     @Bean
-    CommandLineRunner seed(UserRepository users, BalanceRepository balances,
-                           OnRampTransactionRepository onramps, PasswordEncoder encoder) {
+    CommandLineRunner seed(
+            UserRepository users,
+            BalanceRepository balances,
+            OnRampTransactionRepository onramps,
+            PasswordEncoder encoder) {
         return args -> {
-            seedUser(users, balances, onramps, encoder,
-                    AuthService.DEMO_PHONE, "Demo User", 50000, "demo_initial_credit");
+            seedUser(
+                    users,
+                    balances,
+                    onramps,
+                    encoder,
+                    AuthService.DEMO_PHONE,
+                    "Demo User",
+                    50000,
+                    "demo_initial_credit");
             // Additional real recipients make P2P testing possible.
-            seedUser(users, balances, onramps, encoder,
-                    "1111111111", "Alice", 20000, "alice_initial_credit");
-            seedUser(users, balances, onramps, encoder,
-                    "2222222222", "Bob", 2000, "bob_initial_credit");
+            seedUser(
+                    users,
+                    balances,
+                    onramps,
+                    encoder,
+                    "1111111111",
+                    "Alice",
+                    20000,
+                    "alice_initial_credit");
+            seedUser(
+                    users,
+                    balances,
+                    onramps,
+                    encoder,
+                    "2222222222",
+                    "Bob",
+                    2000,
+                    "bob_initial_credit");
         };
     }
 
-    private void seedUser(UserRepository users, BalanceRepository balances,
-                          OnRampTransactionRepository onramps, PasswordEncoder encoder,
-                          String phone, String name, long amount, String token) {
+    private void seedUser(
+            UserRepository users,
+            BalanceRepository balances,
+            OnRampTransactionRepository onramps,
+            PasswordEncoder encoder,
+            String phone,
+            String name,
+            long amount,
+            String token) {
         if (users.findByNumber(phone).isPresent()) return;
 
         User user = new User();

@@ -21,10 +21,8 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
 
     @Override
     protected void doFilterInternal(
-            HttpServletRequest req,
-            HttpServletResponse res,
-            FilterChain chain
-    ) throws ServletException, IOException {
+            HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+            throws ServletException, IOException {
 
         String h = req.getHeader("Authorization");
 
@@ -32,16 +30,11 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
             try {
                 Long id = jwt.extractUserId(h.substring(7));
 
-                var auth = new UsernamePasswordAuthenticationToken(
-                        id,
-                        null,
-                        AuthorityUtils.NO_AUTHORITIES
-                );
+                var auth =
+                        new UsernamePasswordAuthenticationToken(
+                                id, null, AuthorityUtils.NO_AUTHORITIES);
 
-                auth.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(req)
-                );
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
 

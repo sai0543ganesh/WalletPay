@@ -19,9 +19,7 @@ public class JwtService {
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration-ms}") long expiration) {
 
-        this.key = Keys.hmacShaKeyFor(
-                secret.getBytes(StandardCharsets.UTF_8)
-        );
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expiration = expiration;
     }
 
@@ -41,7 +39,6 @@ public class JwtService {
                         .build()
                         .parseSignedClaims(token)
                         .getPayload()
-                        .getSubject()
-        );
+                        .getSubject());
     }
 }

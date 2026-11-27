@@ -12,10 +12,11 @@ public class WebConfig implements WebMvcConfigurer {
     private final String[] allowedOrigins;
 
     public WebConfig(@Value("${app.cors.allowed-origins:http://localhost:5173}") String origins) {
-        this.allowedOrigins = Arrays.stream(origins.split(","))
-                .map(String::trim)
-                .filter(origin -> !origin.isBlank())
-                .toArray(String[]::new);
+        this.allowedOrigins =
+                Arrays.stream(origins.split(","))
+                        .map(String::trim)
+                        .filter(origin -> !origin.isBlank())
+                        .toArray(String[]::new);
     }
 
     @Override

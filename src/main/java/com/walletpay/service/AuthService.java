@@ -20,7 +20,11 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final JwtService jwt;
 
-    public AuthService(UserRepository users, BalanceRepository balances, PasswordEncoder encoder, JwtService jwt) {
+    public AuthService(
+            UserRepository users,
+            BalanceRepository balances,
+            PasswordEncoder encoder,
+            JwtService jwt) {
         this.users = users;
         this.balances = balances;
         this.encoder = encoder;
@@ -29,11 +33,16 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(AuthRequest req) {
-        User user = users.findByNumber(req.phone())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid phone number or password"));
+        User user =
+                users.findByNumber(req.phone())
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Invalid phone number or password"));
 
         // Reserved demo account: any non-empty password is accepted.
-        if (!DEMO_PHONE.equals(req.phone()) && !encoder.matches(req.password(), user.getPassword())) {
+        if (!DEMO_PHONE.equals(req.phone())
+                && !encoder.matches(req.password(), user.getPassword())) {
             throw new IllegalArgumentException("Invalid phone number or password");
         }
 
@@ -43,10 +52,12 @@ public class AuthService {
     @Transactional
     public AuthResponse register(AuthRequest req) {
         if (DEMO_PHONE.equals(req.phone())) {
-            throw new IllegalArgumentException("This phone number is reserved for the demo account");
+            throw new IllegalArgumentException(
+                    "This phone number is reserved for the demo account");
         }
         if (users.findByNumber(req.phone()).isPresent()) {
-            throw new IllegalArgumentException("An account with this phone number already exists. Please sign in.");
+            throw new IllegalArgumentException(
+                    "An account with this phone number already exists. Please sign in.");
         }
 
         User user = new User();
@@ -65,6 +76,7 @@ public class AuthService {
     }
 
     private AuthResponse response(User user) {
-        return new AuthResponse(user.getId(), user.getName(), user.getNumber(), jwt.generate(user.getId()));
+        return new AuthResponse(
+                user.getId(), user.getName(), user.getNumber(), jwt.generate(user.getId()));
     }
 }
